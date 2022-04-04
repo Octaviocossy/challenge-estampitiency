@@ -3,14 +3,14 @@ import { render } from 'react-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 
 import App from './App';
-import { CartProvider } from './context';
+import { Provider } from './context';
 
 render(
   <React.StrictMode>
     <ChakraProvider>
-      <CartProvider>
+      <Provider>
         <App />
-      </CartProvider>
+      </Provider>
     </ChakraProvider>
   </React.StrictMode>,
   document.getElementById('root')

@@ -1,16 +1,18 @@
 import { Box, Button, Image, Text } from '@chakra-ui/react';
-import { useContext } from 'react';
 
-import { CartContext } from '../context';
-import { Product } from '../types';
+import { useCart } from '../context';
+import { CartItem, Product } from '../types';
 
 interface Props {
   product: Product;
 }
 
 const Card: React.FC<Props> = ({ product }) => {
-  const { addProduct, handleButtons, removeProduct, quantityPerProduct } =
-    useContext(CartContext);
+  const {
+    actions: { handleAdd, handleDecrement, handleIncrement },
+    state: { cart },
+  } = useCart();
+  const cartItem = cart.get(product.id) as CartItem;
 
   return (
     <Box display={'flex'} flexDirection={'column'} gap={'16px'}>
@@ -27,7 +29,7 @@ const Card: React.FC<Props> = ({ product }) => {
         </Text>
         <Text color={'gray'}>{product.description}</Text>
       </Box>
-      {handleButtons(product.id) ? (
+      {cartItem ? (
         <Box
           alignItems={'center'}
           display={'flex'}
@@ -37,15 +39,15 @@ const Card: React.FC<Props> = ({ product }) => {
           <Button
             colorScheme={'messenger'}
             p={'1.5rem 2rem'}
-            onClick={() => removeProduct(product.id)}
+            onClick={() => handleDecrement(product.id)}
           >
             -
           </Button>
-          <Text fontSize={'20px'}>{quantityPerProduct(product.id)}</Text>
+          <Text fontSize={'20px'}>{cartItem.count}</Text>
           <Button
             colorScheme={'messenger'}
             p={'1.5rem 2rem'}
-            onClick={() => addProduct(product)}
+            onClick={() => handleIncrement(product.id)}
           >
             +
           </Button>
@@ -54,7 +56,7 @@ const Card: React.FC<Props> = ({ product }) => {
         <Button
           colorScheme={'messenger'}
           p={'1.5rem'}
-          onClick={() => addProduct(product)}
+          onClick={() => handleAdd(product)}
         >
           Agregar
         </Button>

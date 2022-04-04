@@ -1,99 +1,105 @@
-import { createContext, useReducer } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 
-import { Product } from './types';
+import { CartItem, Product } from './types';
 
+interface ActionInterface {
+  handleAdd: (product: Product) => void;
+  handleIncrement: (id: Product['id']) => void;
+  handleDecrement: (id: Product['id']) => void;
+}
+interface StateInterface {
+  cart: Map<string, CartItem>;
+  total: number;
+  count: number;
+}
 interface ContextProps {
-  cartAmount: () => number;
-  addProduct: (product: Product) => void;
-  handleButtons: (id: Product['id']) => boolean;
-  removeProduct: (id: Product['id']) => void;
-  quantityPerProduct: (id: Product['id']) => number;
-  numberOfProductsInCart: () => number;
-}
-interface ProviderProps {
-  children: JSX.Element | JSX.Element[];
+  state: StateInterface;
+  actions: ActionInterface;
 }
 
-interface InitialStateTypes {
-  cart: Product[];
-}
+export const Context = createContext({} as ContextProps);
 
-type Actions =
-  | { type: 'addProduct'; payload: Product }
-  | { type: 'removeProduct'; payload: Product[] };
+export const Provider: React.FC = ({ children }) => {
+  const [cart, setCart] = useState<Map<Product['id'], CartItem>>(
+    () => new Map<Product['id'], CartItem>()
+  );
 
-const initialState: InitialStateTypes = {
-  cart: [],
-};
+  const { total, count } = useMemo(() => {
+    return Array.from(cart.values()).reduce(
+      ({ total, count }, item) => {
+        return {
+          total: total + item.count * item.product.price,
+          count: count + item.count,
+        };
+      },
+      {
+        total: 0,
+        count: 0,
+      }
+    );
+  }, [cart]);
 
-const cartReducer = (
-  state: InitialStateTypes,
-  action: Actions
-): InitialStateTypes => {
-  if (action.type === 'addProduct') {
-    return {
-      ...state,
-      cart: [...state.cart, action.payload],
-    };
-  }
-  if (action.type === 'removeProduct') {
-    return {
-      ...state,
-      cart: action.payload,
-    };
-  }
+  const handleAdd = (product: Product) => {
+    const draft = new Map(cart);
 
-  return state;
-};
-
-export const CartContext = createContext({} as ContextProps);
-
-export const CartProvider: React.FC<ProviderProps> = ({ children }) => {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
-
-  const addProduct = (product: Product) => {
-    dispatch({ type: 'addProduct', payload: product });
-  };
-
-  const removeProduct = (id: Product['id']) => {
-    const filtTheOtherItems = state.cart.filter((item) => item.id !== id);
-    const filtItemToRemove = state.cart.filter((item) => item.id === id);
-
-    filtItemToRemove.splice(0, 1);
-    dispatch({
-      type: 'removeProduct',
-      payload: [...filtItemToRemove, ...filtTheOtherItems],
+    draft.set(product.id, {
+      product,
+      count: 1,
     });
+
+    setCart(draft);
   };
 
-  const handleButtons = (id: Product['id']): boolean => {
-    return state.cart.some((product) => product.id === id);
+  const handleDecrement = (id: Product['id']) => {
+    const draft = new Map(cart);
+    const item = draft.get(id) as CartItem;
+
+    if (item.count === 1) {
+      draft.delete(id);
+    } else {
+      draft.set(id, {
+        ...item,
+        count: item.count - 1,
+      });
+    }
+
+    setCart(draft);
   };
 
-  const numberOfProductsInCart = (): number => {
-    return state.cart.length;
+  const handleIncrement = (id: Product['id']) => {
+    const draft = new Map(cart);
+    const item = draft.get(id) as CartItem;
+
+    draft.set(id, {
+      ...item,
+      count: item.count + 1,
+    });
+
+    setCart(draft);
   };
 
-  const cartAmount = (): number => {
-    return state.cart.reduce((acc, product) => acc + product.price, 0);
+  const state: StateInterface = {
+    cart,
+    total,
+    count,
   };
 
-  const quantityPerProduct = (id: Product['id']): number => {
-    return state.cart.filter((product) => product.id === id).length;
+  const actions: ActionInterface = {
+    handleAdd,
+    handleIncrement,
+    handleDecrement,
   };
 
   return (
-    <CartContext.Provider
-      value={{
-        addProduct,
-        cartAmount,
-        handleButtons,
-        removeProduct,
-        quantityPerProduct,
-        numberOfProductsInCart,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
+    <Context.Provider value={{ state, actions }}>{children}</Context.Provider>
   );
+};
+
+export const useCart = () => {
+  const { state, actions } = useContext(Context);
+
+  return {
+    state,
+    actions,
+  };
 };

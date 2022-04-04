@@ -1,10 +1,11 @@
 import { Box, Text } from '@chakra-ui/react';
-import { useContext } from 'react';
 
-import { CartContext } from '../context';
+import { useCart } from '../context';
 
-const Cart = () => {
-  const { numberOfProductsInCart, cartAmount } = useContext(CartContext);
+const Cart: React.FC = () => {
+  const {
+    state: { total, count },
+  } = useCart();
 
   return (
     <Box
@@ -20,7 +21,7 @@ const Cart = () => {
       shadow={'dark-lg'}
     >
       <Text color={'white'} fontSize={'18px'} fontWeight={500}>
-        {numberOfProductsInCart()} productos (total: $ {cartAmount()})
+        {count} productos (total: $ {total})
       </Text>
     </Box>
   );
